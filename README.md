@@ -30,7 +30,7 @@ Local LLM Chat with Ollama and Streamlit
 
 7. Download Ollama models
     ```bash
-   $ ollama pull deepseek-r1:7b
+   $ ollama pull deepseek-r1:1.5b
    $ ollama pull llama3.2
    ```
 
@@ -38,3 +38,7 @@ Local LLM Chat with Ollama and Streamlit
     ```bash
    $ streamlit run app.py
    ```
+
+
+   ## Notes on two versions
+   You can either call the ollama command line prompt directly with **subprocess** or you can use the ollama library (pip install ollama); there is minor formatting issues with the pip library, but both are included in the GitHub repository

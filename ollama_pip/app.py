@@ -1,5 +1,5 @@
 import streamlit as st
-import subprocess
+import ollama
 
 # Title and Description
 st.title("Local LLM Chat App using Ollama")
@@ -12,34 +12,21 @@ if "conversation" not in st.session_state:
 # Function to get a list of available Ollama models
 def get_ollama_models():
     try:
-        result = subprocess.run(
-            ["ollama", "list"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        if result.returncode != 0:
-            return [f"Error: {result.stderr.strip()}"]
-        # Process the output to exclude the first row and extract the first word of each line
-        lines = result.stdout.strip().splitlines()
-        return [line.split()[0] for line in lines[1:]]  # Skip the first row (header) and take the first word
-    except FileNotFoundError:
-        return ["Error: Ollama is not installed or not found in PATH."]
+        models = ollama.list()  # Get models using Python API
+        return [model["model"] for model in models["models"]]
+    except Exception as e:
+        return [f"Error: {str(e)}"]
+
 
 # Function to stream output from Ollama
 def query_ollama_stream(prompt, model):
     try:
-        # Use subprocess to stream the output line by line
-        process = subprocess.Popen(
-            ["ollama", "run", model, prompt],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-        )
-        for line in process.stdout:
-            yield line.strip()
-    except FileNotFoundError:
-        yield "Error: Ollama is not installed or not found in PATH."
+        response = ollama.chat(model=model, messages=[{"role": "user", "content": prompt}], stream=True)
+        for chunk in response:
+            yield chunk["message"]["content"]
+    except Exception as e:
+        yield f"Error: {str(e)}"
+
 
 # Get list of available models
 available_models = get_ollama_models()
@@ -74,8 +61,11 @@ if submit_button:
             response_placeholder = st.empty()
             response_text = ""
             for chunk in query_ollama_stream(user_input, selected_model):
-                response_text += chunk + "\n"
-                response_placeholder.markdown(f"*{selected_model}:* {response_text}")
+                response_text += chunk
+                # response_placeholder.markdown(f"**{selected_model}:**\n\n```{response_text}```")
+                response_placeholder.markdown(f"**{selected_model}:**\n\n```{response_text}```", unsafe_allow_html=True)
+
+
 
         # Append the final response to the conversation without re-displaying it
         st.session_state.conversation.append((selected_model, response_text.strip()))
